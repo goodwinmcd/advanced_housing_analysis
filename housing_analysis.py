@@ -60,9 +60,15 @@ def classify_columns(data, columns):
         data[column] = pd.to_numeric(data[column])
         five_num_sum = data[column].describe()
         data.loc[data[column] == 0, column] = 0
-        data.loc[(data[column] > 0) & (data[column] < five_num_sum['25%']), column] = 1
-        data.loc[(data[column] < five_num_sum['50%']) & (data[column] >= five_num_sum['25%']), column] = 2
-        data.loc[(data[column] < five_num_sum['75%']) & (data[column] >= five_num_sum['50%']), column] = 3
+        data.loc[(data[column] > 0) &
+                 (data[column] < five_num_sum['25%']) &
+                 (data[column] != 0), column] = 1
+        data.loc[(data[column] < five_num_sum['50%']) &
+                 (data[column] >= five_num_sum['25%']) &
+                 (data[column] != 0), column] = 2
+        data.loc[(data[column] < five_num_sum['75%']) &
+                 (data[column] >= five_num_sum['50%']) &
+                 (data[column] != 0), column] = 3
         data.loc[data[column] >= five_num_sum['75%'], column] = 4
     return data
 
@@ -113,5 +119,5 @@ class_columns = houses.drop(labels=['Id',
                                     'MiscVal',
                                     'YrSold',
                                     ], axis=1)
-classed_data = classify_columns(houses, square_feet_columns)
-classes_data = get_column_info(class_columns)
+classed_data = classify_columns(class_columns, square_feet_columns)
+classes_dict = get_column_info(classed_data)
