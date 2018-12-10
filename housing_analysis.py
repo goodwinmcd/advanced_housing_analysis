@@ -5,7 +5,7 @@ import pandas as pd
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
-houses = pd.read_csv('./train.csv')
+houses = pd.read_csv('/home/goodwin/Documents/Projects/advanced_housing/train.csv')
 houses = houses.dropna(subset=['MSZoning', 'Utilities', 'Exterior1st', 'Exterior2nd', 'KitchenQual'])
 na_values = {
     'LotFrontage': 0,
@@ -38,6 +38,8 @@ na_values = {
     'SaleType': 'Oth',
 }
 houses.fillna(value=na_values, inplace=True)
+#Corner cases
+houses.loc[houses['MasVnrArea']=='None', 'MasVnrArea'] = 0
 
 def create_col_dict(data):
     col_dict = {}
@@ -55,9 +57,10 @@ def create_col_dict(data):
 
 def classify_columns(data, columns):
     for column in columns:
+        data[column] = pd.to_numeric(data[column])
         five_num_sum = data[column].describe()
         data.loc[data[column] == 0, column] = 0
-        data.loc[(data[column] > 0 & data[column]) < (five_num_sum['25%']), column] = 1
+        data.loc[(data[column] > 0) & (data[column] < five_num_sum['25%']), column] = 1
         data.loc[(data[column] < five_num_sum['50%']) & (data[column] >= five_num_sum['25%']), column] = 2
         data.loc[(data[column] < five_num_sum['75%']) & (data[column] >= five_num_sum['50%']), column] = 3
         data.loc[data[column] >= five_num_sum['75%'], column] = 4
@@ -104,29 +107,11 @@ square_feet_columns =   [
                         ]
 
 class_columns = houses.drop(labels=['Id',
-                                    'LotArea',
-                                    'LotFrontage',
-                                    'MasVnrArea',
-                                    'BsmtFinSF1',
-                                    'BsmtFinSF2',
-                                    'BsmtUnfSF',
-                                    'TotalBsmtSF',
-                                    '1stFlrSF',
-                                    '2ndFlrSF',
-                                    'LowQualFinSF',
-                                    'GrLivArea',
                                     'GarageYrBlt',
-                                    'GarageArea',
-                                    'WoodDeckSF',
-                                    'OpenPorchSF',
                                     'YearRemodAdd',
                                     'YearBuilt',
-                                    'EnclosedPorch',
-                                    '3SsnPorch',
-                                    'ScreenPorch',
-                                    'PoolArea',
                                     'MiscVal',
                                     'YrSold',
                                     ], axis=1)
-#classes_data = get_column_info(class_columns)
 classed_data = classify_columns(houses, square_feet_columns)
+classes_data = get_column_info(class_columns)
