@@ -4,8 +4,11 @@ import numpy as np
 import pandas as pd
 import pprint
 
+windows_file = 'C:\\Users\\mcdonago\\Source\\Repos\\advanced_housing_analysis\\train.csv'
+linux_file = '/home/goodwin/Documents/Projects/advanced_housing/train.csv'
+
 pp = pprint.PrettyPrinter(indent=4)
-houses = pd.read_csv('C:\\Users\\mcdonago\\Source\\Repos\\advanced_housing_analysis\\train.csv')
+houses = pd.read_csv(linux_file)
 houses = houses.dropna(subset=['MSZoning', 'Utilities', 'Exterior1st', 'Exterior2nd', 'KitchenQual'])
 na_values = {
     'LotFrontage': 0,
@@ -99,9 +102,9 @@ def figure_inflation_price(row):
     old_price = row['SalePrice']
     inflation_rate = .0218
     for year in range(num_years):
-        old_price = old_price + (inflation_rate * old_price) 
+        old_price = old_price + (inflation_rate * old_price)
     return old_price
-        
+
 def remodeled_class_col(row):
    return False if row['YearRemodAdd'] == row['YearBuilt'] else True
 
