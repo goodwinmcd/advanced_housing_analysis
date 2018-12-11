@@ -44,7 +44,7 @@ houses.loc[houses['MasVnrArea']=='None', 'MasVnrArea'] = 0
 def create_col_dict(data):
     col_dict = {}
     for column in data.keys():
-        if column == 'SalePrice':
+        if column == 'InflSalePrice':
             continue
         col_dict[column] = {}
         for value in data[column].unique():
@@ -86,10 +86,13 @@ def get_column_info(data):
     for column in col_info:
         for value in col_info[column]:
             current_dataset = data.loc[data[column]==value]
-            col_info[column][value]['median'] = get_median(current_dataset['SalePrice'])
-            col_info[column][value]['mean'] = get_mean(current_dataset['SalePrice'])
-            col_info[column][value]['count'] = count_rows(current_dataset['SalePrice'])
+            col_info[column][value]['median'] = get_median(current_dataset['InflSalePrice'])
+            col_info[column][value]['mean'] = get_mean(current_dataset['InflSalePrice'])
+            col_info[column][value]['count'] = count_rows(current_dataset['InflSalePrice'])
     return col_info
+
+def find_remodeled_time(row):
+   return -1 if row['YearRemodAdd'] == row['YearBuilt'] else 2018 - row['YearRemodAdd']
 
 def figure_inflation_price(row):
     num_years = 2018 - row['YrSold']
@@ -99,10 +102,22 @@ def figure_inflation_price(row):
         old_price = old_price + (inflation_rate * old_price) 
     return old_price
         
+def remodeled_class_col(row):
+   return False if row['YearRemodAdd'] == row['YearBuilt'] else True
 
 def inflation_prices(df):
     return df.apply(figure_inflation_price, axis=1)
 
+def year_since_remod(df):
+    return df.apply(find_remodeled_time, axis=1)
+
+def remodeled(df):
+    return df.apply(remodeled_class_col, axis=1)
+
+houses['InflSalePrice'] = inflation_prices(houses)
+houses['YrSinceRemod'] = year_since_remod(houses)
+houses['remodeled'] = remodeled(houses)
+houses = houses.drop('SalePrice', axis=1)
 
 square_feet_columns =   [
                         'LotArea',
@@ -131,7 +146,8 @@ class_columns = houses.drop(labels=['Id',
                                     'YearBuilt',
                                     'MiscVal',
                                     'YrSold',
+                                    'YrSinceRemod',
                                     ], axis=1)
-#classed_data = classify_columns(class_columns, square_feet_columns)
-#classes_dict = get_column_info(classed_data)
-houses['InflSalePrice'] = inflation_prices(houses)
+
+classed_data = classify_columns(class_columns, square_feet_columns)
+classes_dict = get_column_info(classed_data)
