@@ -72,7 +72,8 @@ def classify_columns(data, columns):
         data.loc[(data[column] < five_num_sum['75%']) &
                  (data[column] >= five_num_sum['50%']) &
                  (data[column] != 0), column] = 3
-        data.loc[data[column] >= five_num_sum['75%'], column] = 4
+        data.loc[(data[column] >= five_num_sum['75%']) &
+                 (data[column] != 0), column] = 4
     return data
 
 def get_median(column_dataset):
@@ -94,9 +95,6 @@ def get_column_info(data):
             col_info[column][value]['count'] = count_rows(current_dataset['InflSalePrice'])
     return col_info
 
-def find_remodeled_time(row):
-   return -1 if row['YearRemodAdd'] == row['YearBuilt'] else 2018 - row['YearRemodAdd']
-
 def figure_inflation_price(row):
     num_years = 2018 - row['YrSold']
     old_price = row['SalePrice']
@@ -105,22 +103,34 @@ def figure_inflation_price(row):
         old_price = old_price + (inflation_rate * old_price)
     return old_price
 
-def remodeled_class_col(row):
-   return False if row['YearRemodAdd'] == row['YearBuilt'] else True
-
 def inflation_prices(df):
     return df.apply(figure_inflation_price, axis=1)
+
+def find_remodeled_time(row):
+   return -1 if row['YearRemodAdd'] == row['YearBuilt'] else 2018 - row['YearRemodAdd']
 
 def year_since_remod(df):
     return df.apply(find_remodeled_time, axis=1)
 
+def remodeled_class_col(row):
+   return False if row['YearRemodAdd'] == row['YearBuilt'] else True
+
 def remodeled(df):
     return df.apply(remodeled_class_col, axis=1)
 
-houses['InflSalePrice'] = inflation_prices(houses)
-houses['YrSinceRemod'] = year_since_remod(houses)
-houses['remodeled'] = remodeled(houses)
-houses = houses.drop('SalePrice', axis=1)
+def get_tot_sf(row, sf_cols):
+    sum = 0
+    for col in sf_cols:
+        sum += row[col]
+    return sum
+
+def total_sf(df, sf_cols):
+    sf_cols.remove('LotFrontage')
+    sf_cols.remove('MasVnrArea')
+    sf_cols.remove('BsmtFinSF1')
+    sf_cols.remove('BsmtFinSF2')
+    sf_cols.remove('BsmtUnfSF')
+    return df.apply(get_tot_sf, axis=1, sf_cols=sf_cols)
 
 square_feet_columns =   [
                         'LotArea',
@@ -142,6 +152,13 @@ square_feet_columns =   [
                         'ScreenPorch',
                         'PoolArea',
                         ]
+                        
+houses['InflSalePrice'] = inflation_prices(houses)
+houses['YrSinceRemod'] = year_since_remod(houses)
+houses['remodeled'] = remodeled(houses)
+houses['totalSF'] = total_sf(houses, square_feet_columns)
+
+houses = houses.drop('SalePrice', axis=1)
 
 class_columns = houses.drop(labels=['Id',
                                     'GarageYrBlt',
@@ -154,3 +171,4 @@ class_columns = houses.drop(labels=['Id',
 
 classed_data = classify_columns(class_columns, square_feet_columns)
 classes_dict = get_column_info(classed_data)
+#pp.pprint(classes_dict)
