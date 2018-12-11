@@ -5,7 +5,7 @@ import pandas as pd
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
-houses = pd.read_csv('/home/goodwin/Documents/Projects/advanced_housing/train.csv')
+houses = pd.read_csv('C:\\Users\\mcdonago\\Source\\Repos\\advanced_housing_analysis\\train.csv')
 houses = houses.dropna(subset=['MSZoning', 'Utilities', 'Exterior1st', 'Exterior2nd', 'KitchenQual'])
 na_values = {
     'LotFrontage': 0,
@@ -91,6 +91,19 @@ def get_column_info(data):
             col_info[column][value]['count'] = count_rows(current_dataset['SalePrice'])
     return col_info
 
+def figure_inflation_price(row):
+    num_years = 2018 - row['YrSold']
+    old_price = row['SalePrice']
+    inflation_rate = .0218
+    for year in range(num_years):
+        old_price = old_price + (inflation_rate * old_price) 
+    return old_price
+        
+
+def inflation_prices(df):
+    return df.apply(figure_inflation_price, axis=1)
+
+
 square_feet_columns =   [
                         'LotArea',
                         'LotFrontage',
@@ -119,5 +132,6 @@ class_columns = houses.drop(labels=['Id',
                                     'MiscVal',
                                     'YrSold',
                                     ], axis=1)
-classed_data = classify_columns(class_columns, square_feet_columns)
-classes_dict = get_column_info(classed_data)
+#classed_data = classify_columns(class_columns, square_feet_columns)
+#classes_dict = get_column_info(classed_data)
+houses['InflSalePrice'] = inflation_prices(houses)
