@@ -151,8 +151,9 @@ square_feet_columns =   [
                         '3SsnPorch',
                         'ScreenPorch',
                         'PoolArea',
+                        'totalSF',
                         ]
-                        
+
 houses['InflSalePrice'] = inflation_prices(houses)
 houses['YrSinceRemod'] = year_since_remod(houses)
 houses['remodeled'] = remodeled(houses)
