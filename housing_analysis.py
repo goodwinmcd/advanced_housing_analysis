@@ -3,12 +3,14 @@
 import numpy as np
 import pandas as pd
 import pprint
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 windows_file = 'C:\\Users\\mcdonago\\Source\\Repos\\advanced_housing_analysis\\train.csv'
 linux_file = '/home/goodwin/Documents/Projects/advanced_housing/train.csv'
 
 pp = pprint.PrettyPrinter(indent=4)
-houses = pd.read_csv(linux_file)
+houses = pd.read_csv(windows_file)
 houses = houses.dropna(subset=['MSZoning', 'Utilities', 'Exterior1st', 'Exterior2nd', 'KitchenQual'])
 na_values = {
     'LotFrontage': 0,
@@ -125,12 +127,21 @@ def get_tot_sf(row, sf_cols):
     return sum
 
 def total_sf(df, sf_cols):
+    #Not relevant to total SF
     sf_cols.remove('LotFrontage')
     sf_cols.remove('MasVnrArea')
     sf_cols.remove('BsmtFinSF1')
     sf_cols.remove('BsmtFinSF2')
     sf_cols.remove('BsmtUnfSF')
+    sf_cols.remove('totalSF')
     return df.apply(get_tot_sf, axis=1, sf_cols=sf_cols)
+
+def get_neighborhood_data(data):
+    neighborhood_values = data['Neighborhood'].unique()
+    neighborhood_data = {}
+    for neigh in neighborhood_values:
+        neighborhood_data[neigh] = data.loc[data['Neighborhood'] == neigh, ['Neighborhood', 'totalSF']]
+    return neighborhood_data
 
 square_feet_columns =   [
                         'LotArea',
@@ -171,5 +182,17 @@ class_columns = houses.drop(labels=['Id',
                                     ], axis=1)
 
 classed_data = classify_columns(class_columns, square_feet_columns)
-classes_dict = get_column_info(classed_data)
+#classes_dict = get_column_info(classed_data)
 #pp.pprint(classes_dict)
+neigh_data = get_neighborhood_data(classed_data)
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+colors = cm.rainbow(np.linspace(0, 1, len(neigh_data.keys())))
+
+for neigh, color in zip(neigh_data.keys(), colors):
+    x, y = neigh_data[neigh]
+    ax.scatter(x, y, color=color, s=30, label=neigh)
+
+plt.legend(loc=2)
+plt.show()
