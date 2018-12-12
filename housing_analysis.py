@@ -6,11 +6,14 @@ import pprint
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
+# Global variables
 windows_file = 'C:\\Users\\mcdonago\\Source\\Repos\\advanced_housing_analysis\\train.csv'
 linux_file = '/home/goodwin/Documents/Projects/advanced_housing/train.csv'
-
+SCATTER_CUTOFF_SF = 15000
 pp = pprint.PrettyPrinter(indent=4)
-houses = pd.read_csv(windows_file)
+houses = pd.read_csv(linux_file)
+
+# Deal with null values
 houses = houses.dropna(subset=['MSZoning', 'Utilities', 'Exterior1st', 'Exterior2nd', 'KitchenQual'])
 na_values = {
     'LotFrontage': 0,
@@ -45,6 +48,30 @@ na_values = {
 houses.fillna(value=na_values, inplace=True)
 #Corner cases
 houses.loc[houses['MasVnrArea']=='None', 'MasVnrArea'] = 0
+
+# Columns that have continous variables that can be categorized
+square_feet_columns =   [
+                        'LotArea',
+                        'LotFrontage',
+                        'MasVnrArea',
+                        'BsmtFinSF1',
+                        'BsmtFinSF2',
+                        'BsmtUnfSF',
+                        'TotalBsmtSF',
+                        '1stFlrSF',
+                        '2ndFlrSF',
+                        'LowQualFinSF',
+                        'GrLivArea',
+                        'GarageArea',
+                        'WoodDeckSF',
+                        'OpenPorchSF',
+                        'EnclosedPorch',
+                        '3SsnPorch',
+                        'ScreenPorch',
+                        'PoolArea',
+                        'totalSF',
+                        ]
+
 
 def create_col_dict(data):
     col_dict = {}
@@ -139,31 +166,18 @@ def total_sf(df, sf_cols):
 def get_neighborhood_data(data):
     neighborhood_values = data['Neighborhood'].unique()
     neighborhood_data = {}
+    data = data.drop(data[data['totalSF'] > SCATTER_CUTOFF_SF].index)
     for neigh in neighborhood_values:
-        neighborhood_data[neigh] = data.loc[data['Neighborhood'] == neigh, ['Neighborhood', 'totalSF']]
+        neighborhood_data[neigh] = data.loc[data['Neighborhood'] == neigh, ['Neighborhood', 'totalSF', 'InflSalePrice']]
     return neighborhood_data
 
-square_feet_columns =   [
-                        'LotArea',
-                        'LotFrontage',
-                        'MasVnrArea',
-                        'BsmtFinSF1',
-                        'BsmtFinSF2',
-                        'BsmtUnfSF',
-                        'TotalBsmtSF',
-                        '1stFlrSF',
-                        '2ndFlrSF',
-                        'LowQualFinSF',
-                        'GrLivArea',
-                        'GarageArea',
-                        'WoodDeckSF',
-                        'OpenPorchSF',
-                        'EnclosedPorch',
-                        '3SsnPorch',
-                        'ScreenPorch',
-                        'PoolArea',
-                        'totalSF',
-                        ]
+def make_scatter_plt(data):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    colors = cm.rainbow(np.linspace(0, 1, len(neigh_data.keys())))
+    for neigh, color in zip(neigh_data.keys(), colors):
+        ax.scatter(neigh_data[neigh]['totalSF'], neigh_data[neigh]['InflSalePrice'], color=color, s=30, label=neigh)
+    plt.legend(loc=1)
 
 houses['InflSalePrice'] = inflation_prices(houses)
 houses['YrSinceRemod'] = year_since_remod(houses)
@@ -185,14 +199,5 @@ classed_data = classify_columns(class_columns, square_feet_columns)
 #classes_dict = get_column_info(classed_data)
 #pp.pprint(classes_dict)
 neigh_data = get_neighborhood_data(classed_data)
-
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-colors = cm.rainbow(np.linspace(0, 1, len(neigh_data.keys())))
-
-for neigh, color in zip(neigh_data.keys(), colors):
-    x, y = neigh_data[neigh]
-    ax.scatter(x, y, color=color, s=30, label=neigh)
-
-plt.legend(loc=2)
+make_scatter_plt(neigh_data)
 plt.show()
